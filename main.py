@@ -68,15 +68,22 @@ async def sethome(ctx, *args):
     await ctx.send("New Home Set")
 
 @client.command()
-async def home(ctx, arg = None):
+async def homes(ctx, arg = None):
     await ctx.send(embed = cmd.Minecraft.showHomes(arg))
 
 @client.command()
-async def waypoint(ctx, *args):
+async def addwaypoint(ctx, *args):
     if len(args) < 4:
         return
     
-    await ctx.send(cmd.Minecraft.addPlace(*args))
+    await ctx.send(cmd.Minecraft.addPlace(ctx.author, *args))
+
+@client.command()
+async def waypoints(ctx, *args):
+    message = await ctx.send(embed=cmd.Minecraft.showPlaces())
+    for reaction in ['⏮️','◀️', '▶️', '⏭️']:
+        await message.add_reaction(reaction)
+
     
 
 
@@ -86,24 +93,13 @@ async def on_raw_reaction_add(payload):
         return
 
     message = await client.get_channel(payload.channel_id).fetch_message(payload.message_id)
-    if payload.emoji.name == '⏮️':
-        await message.edit(embed=cmd.Anime.getSeasonAnime(0))
-    elif payload.emoji.name == '◀️':
-        animeId = int(message.embeds[0].footer.text.split("/")[0])-2
+    pageId = int(message.embeds[0].footer.text.split("/")[0])
+    lastPage = int(message.embeds[0].footer.text.split("/")[1])
 
-        if animeId == -1:
-            animeId = 49
-
-        await message.edit(embed=cmd.Anime.getSeasonAnime(animeId))
-    elif payload.emoji.name == '▶️':
-        animeId = int(message.embeds[0].footer.text.split("/")[0])
-
-        if animeId == 50:
-            animeId = 0
-
-        await message.edit(embed=cmd.Anime.getSeasonAnime(animeId))
-    elif payload.emoji.name == '⏭️':
-        await message.edit(embed=cmd.Anime.getSeasonAnime(49))
+    if message.embeds[0].title == "Waypoints":
+        await message.edit(embed= cmd.Minecraft().editWaypointList(payload, pageId, lastPage))
+    else:
+        await message.edit(embed= cmd.Anime().editAnimeList(payload, pageId, lastPage))
     
     await message.remove_reaction(payload.emoji.name, payload.member)
 
@@ -122,5 +118,3 @@ async def on_message(message):
     await client.process_commands(message)
         
 client.run(TOKEN)
-
-

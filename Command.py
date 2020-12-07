@@ -64,9 +64,9 @@ class Anime(object):
 
             
     @staticmethod
-    def getSeasonAnime(animePos=0):
+    def getSeasonAnime(animePos=1):
         searchResult = Jikan().top(type='anime', page=1, subtype='upcoming')
-        animeID = searchResult['top'][animePos]['mal_id']
+        animeID = searchResult['top'][animePos-1]['mal_id']
         searchResult = Jikan().anime(animeID)
 
 
@@ -86,29 +86,32 @@ class Anime(object):
             print(e)
 
         embedVar.add_field(name= "Synopsis", value=f"{searchResult['synopsis'][0:1023]}", inline=False)
-        embedVar.set_footer(text=f"{animePos+1}/50")
+        embedVar.set_footer(text=f"{animePos}/50")
         
         return embedVar
+
+    def editAnimeList(self, payload, pageId, max):
+        if payload.emoji.name == '⏮️':
+            return self.getSeasonAnime(1)
+        elif payload.emoji.name == '◀️':
+            pageId = pageId - 1
+
+            if pageId == 0:
+                pageId = max
+
+            return self.getSeasonAnime(pageId)
+        elif payload.emoji.name == '▶️':
+            pageId = pageId + 1
+
+            if pageId == max+1:
+                pageId = 1
+
+            return self.getSeasonAnime(pageId)
+        elif payload.emoji.name == '⏭️':
+            return self.getSeasonAnime(max)
+
             
-
-    @staticmethod
-    def currentSeason():
-        now = date.today()
-        Y = now.year 
-        seasons = [('winter', (date(Y,  1,  1),  date(Y,  3, 20))),
-           ('spring', (date(Y,  3, 21),  date(Y,  6, 20))),
-           ('summer', (date(Y,  6, 21),  date(Y,  9, 22))),
-           ('fall', (date(Y,  9, 23),  date(Y, 12, 20))),
-           ('winter', (date(Y, 12, 21),  date(Y, 12, 31)))]
-
-        
-        if isinstance(now, datetime):
-            now = now.date()
-        now = now.replace(year=Y)
-        return [Y,next(season for season, (start, end) in seasons
-                if start <= now <= end)]
-        
-        
+         
 class Random():
 
     @staticmethod
@@ -188,7 +191,7 @@ class Minecraft(object):
         return embedVar
 
     @staticmethod
-    def addPlace(*args):
+    def addPlace(user, *args):
         for i in range(3): 
             if args[i][0]== '-':
                 if not args[i].lstrip('-').isdigit():
@@ -202,7 +205,7 @@ class Minecraft(object):
         cur = conn.cursor()
 
         try:
-            cur.execute("INSERT INTO location(name, x, y, z) VALUES(?,?,?,?)", [str(name), x, y, z])
+            cur.execute("INSERT INTO location(name, x, y, z, username) VALUES(?,?,?,?, ?)", [str(name), x, y, z, str(user)])
             message = "Nouvelle endroit ajouté"
         except sqlite3.IntegrityError as e:
             print(e)
@@ -212,3 +215,49 @@ class Minecraft(object):
         conn.commit()
         conn.close()
         return message
+
+    @staticmethod
+    def showPlaces(placeid = 1):
+        embedVar = discord.Embed(title="Waypoints", color=0xFF0000)
+
+        query = "SELECT * FROM location WHERE id = ?"
+
+        conn = sqlite3.connect("Minecraft.db")
+        cur = conn.cursor()
+
+        cur.execute("SELECT COUNT() FROM location")
+        waypointsCount = cur.fetchone()[0]
+
+        cur.execute(query, [placeid])
+
+        waypoint = cur.fetchone()
+        embedVar.add_field(name="Nom", value=f"{waypoint[1]}")
+        embedVar.add_field(name="Utilisateur", value=f"{waypoint[5]}")
+
+        embedVar.add_field(name="Coordonées", value=f"x : {waypoint[2]}\ny : {waypoint[3]}\nz : {waypoint[4]}\n", inline=False)
+
+        embedVar.set_footer(text=f"{int(waypoint[0])}/{waypointsCount}")
+
+        conn.close()
+        return embedVar
+
+    def editWaypointList(self, payload, pageId, max):
+        if payload.emoji.name == '⏮️':
+            return self.showPlaces(1)
+        elif payload.emoji.name == '◀️':
+            pageId = pageId - 1
+
+            if pageId == 0:
+                pageId = max
+
+            return self.showPlaces(pageId)
+        elif payload.emoji.name == '▶️':
+            pageId = pageId + 1
+
+            if pageId == max+1:
+                pageId = 1
+
+            return self.showPlaces(pageId)
+        elif payload.emoji.name == '⏭️':
+            return self.showPlaces(max)
+        
