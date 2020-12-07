@@ -143,17 +143,14 @@ class Minecraft(object):
     @staticmethod
     def setHome(user, *coords):
         
-        for coord in coords:
-            
+        for coord in coords: 
             if coord[0]== '-':
                 if not coord.lstrip('-').isdigit():
                     return
             elif not coord.isdigit():
                 return
 
-        x = int(coords[0])
-        y = int(coords[1])
-        z = int(coords[2])
+        x,y,z = [int(i) for i in coord]
         user = str(user)[:str(user).rindex('#')]
 
         conn = sqlite3.connect("Minecraft.db")
@@ -183,8 +180,35 @@ class Minecraft(object):
         cur.execute(query)
 
         homes = cur.fetchall()
+
         for home in homes:
             embedVar.add_field(name=f"{home[1]}'s Home", value=f'x : {home[2]}\ny : {home[3]}\nz : {home[4]}\n')
 
         conn.close()
         return embedVar
+
+    @staticmethod
+    def addPlace(coords):
+        for i in range(3): 
+            if coords[i][0]== '-':
+                if not coords[i].lstrip('-').isdigit():
+                    return
+            elif not coords[i].isdigit():
+                return
+
+        x,y,z = [int(coords[i]) for i in range(3)]
+        name = coords[3]
+        conn = sqlite3.connect("Minecraft.db")
+        cur = conn.cursor()
+
+        try:
+            cur.execute("INSERT INTO location(name, x, y, z) VALUES(?,?,?,?)", [str(name), x, y, z])
+            message = "Nouvelle endroit ajouté"
+        except sqlite3.IntegrityError as e:
+            print(e)
+            message = f"L'endroit {name} existe déjà"
+        
+
+        conn.commit()
+        conn.close()
+        return message
