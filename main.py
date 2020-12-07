@@ -9,8 +9,7 @@ import discord
 import asyncio
 from discord.ext import commands
 from CONST import constants
-
-import Command as cmd
+from Bot_Commands import minecraft, anime as anm, cocktail as ckt, game_random, weather as wth 
 
 
 TOKEN = constants.TOKEN
@@ -24,18 +23,18 @@ client = commands.Bot(command_prefix='kc!')
 #Weather Command
 @client.command()
 async def weather(ctx, *args):
-    await ctx.send(cmd.Weather.getWeather('-'.join(args)))
+    await ctx.send(wth.getWeather('-'.join(args)))
 
 #Cocktail Command
 @client.command()
 async def cocktail(ctx):
-    await ctx.send(embed = cmd.Cocktail.getCocktail())
+    await ctx.send(embed = ckt.getCocktail())
 
 #Season Release Command
 @client.command()
 async def upcoming(ctx, *args):
     reactions = ['⏮️','◀️', '▶️', '⏭️']
-    message = await ctx.send(embed = cmd.Anime.getSeasonAnime())
+    message = await ctx.send(embed = anm.getSeasonAnime())
     for reaction in reactions:
         await message.add_reaction(reaction)
     
@@ -43,44 +42,44 @@ async def upcoming(ctx, *args):
 #Anime Command
 @client.command()
 async def anime(ctx, *args):
-    await ctx.send(cmd.Anime.getAnime)
+    await ctx.send(embed = anm.getAnime(' '.join(args)))
 
 @client.command()
 async def random(ctx, *args):
     if args[0]=="apex":
-        await ctx.send(f"{ctx.author} you play {cmd.Random.apexLoadout()}")
+        await ctx.send(f"{ctx.author} you play {game_random.apexLoadout()}")
     elif args[0]=="ow":
         role = "all"
         if len(args)>1:
             role = args[1]
-        await ctx.send(cmd.Random.owChar(role))
+        await ctx.send(game_random.owChar(role))
     elif args[0]=="r6" and len(args)>1:
-        await ctx.send(cmd.Random.r6Char(args[1]))
+        await ctx.send(game_random.r6Char(args[1]))
     elif args[0]=="lol":
-        await ctx.send(cmd.Random.lolChar())
+        await ctx.send(game_random.lolChar())
     
 @client.command()
 async def sethome(ctx, *args):
     if len(args) < 3:
         return
     
-    cmd.Minecraft.setHome(ctx.author, *args)
+    minecraft.setHome(ctx.author, *args)
     await ctx.send("New Home Set")
 
 @client.command()
 async def homes(ctx, arg = None):
-    await ctx.send(embed = cmd.Minecraft.showHomes(arg))
+    await ctx.send(embed = minecraft.showHomes(arg))
 
 @client.command()
 async def addwaypoint(ctx, *args):
     if len(args) < 4:
         return
     
-    await ctx.send(cmd.Minecraft.addPlace(ctx.author, *args))
+    await ctx.send(minecraft.addPlace(ctx.author, *args))
 
 @client.command()
 async def waypoints(ctx, *args):
-    message = await ctx.send(embed=cmd.Minecraft.showPlaces())
+    message = await ctx.send(embed=minecraft.showPlaces())
     for reaction in ['⏮️','◀️', '▶️', '⏭️']:
         await message.add_reaction(reaction)
 
@@ -97,9 +96,9 @@ async def on_raw_reaction_add(payload):
     lastPage = int(message.embeds[0].footer.text.split("/")[1])
 
     if message.embeds[0].title == "Waypoints":
-        await message.edit(embed= cmd.Minecraft().editWaypointList(payload, pageId, lastPage))
+        await message.edit(embed= minecraft.editWaypointList(payload, pageId, lastPage))
     else:
-        await message.edit(embed= cmd.Anime().editAnimeList(payload, pageId, lastPage))
+        await message.edit(embed= anm.editAnimeList(payload, pageId, lastPage))
     
     await message.remove_reaction(payload.emoji.name, payload.member)
 
