@@ -188,16 +188,16 @@ class Minecraft(object):
         return embedVar
 
     @staticmethod
-    def addPlace(coords):
+    def addPlace(*args):
         for i in range(3): 
-            if coords[i][0]== '-':
-                if not coords[i].lstrip('-').isdigit():
+            if args[i][0]== '-':
+                if not args[i].lstrip('-').isdigit():
                     return
-            elif not coords[i].isdigit():
+            elif not args[i].isdigit():
                 return
 
-        x,y,z = [int(coords[i]) for i in range(3)]
-        name = coords[3]
+        x,y,z = [int(args[i]) for i in range(3)]
+        name = args[3]
         conn = sqlite3.connect("Minecraft.db")
         cur = conn.cursor()
 
