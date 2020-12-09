@@ -10,10 +10,10 @@ import asyncio
 from discord.ext import commands
 from CONST import constants
 from Bot_Commands import minecraft, anime as anm, cocktail as ckt, game_random, weather as wth 
-
+from Games import connect4
 
 TOKEN = constants.TOKEN
-OBJECT_LI = []
+gamesDict = {}
 client = discord.Client()
 
 client = commands.Bot(command_prefix='kc!')
@@ -83,24 +83,54 @@ async def waypoints(ctx, *args):
     for reaction in ['⏮️','◀️', '▶️', '⏭️']:
         await message.add_reaction(reaction)
 
+@client.command()
+async def connect(ctx):
+    """
+    Connect 4 game
+    """
+    gamesDict.update({str(ctx.author): connect4(ctx.author)})
     
+    message = await ctx.send(embed=gamesDict[str(ctx.author)].gameStart())
+    await message.add_reaction('🎮')
 
 
 @client.event
 async def on_raw_reaction_add(payload):
+    connectReaction = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣']
     if payload.user_id == client.user.id:
         return
 
     message = await client.get_channel(payload.channel_id).fetch_message(payload.message_id)
-    pageId = int(message.embeds[0].footer.text.split("/")[0])
-    lastPage = int(message.embeds[0].footer.text.split("/")[1])
+    await message.remove_reaction(payload.emoji.name, payload.member)
 
-    if message.embeds[0].title == "Waypoints":
+    if len(message.embeds[0]) == 0:
+        return
+    embed = message.embeds[0]
+
+    try:
+        pageId = int(embed.footer.text.split("/")[0])
+        lastPage = int(embed.footer.text.split("/")[1])
+    except (AttributeError, ValueError) as e:
+        print(e)
+
+    if embed.title == "Waypoints":
         await message.edit(embed= minecraft.editWaypointList(payload, pageId, lastPage))
+    elif embed.title == "Connect 4":
+        if embed.footer.text == "Waiting for player":
+            await message.edit(embed=gamesDict[str(embed.description)].reactionEdit(payload, message, gamesDict, client)[0])
+            await message.remove_reaction(payload.emoji.name, client.user)
+            for reaction in connectReaction:
+                await message.add_reaction(reaction)
+        else:
+            newEmbed, columnFull = gamesDict[str(embed.description.split(' ')[0])].reactionEdit(payload, message, gamesDict, client)
+            await message.edit(embed=newEmbed)
+            if columnFull:
+                await message.remove_reaction(payload.emoji.name, client.user)
+            
     else:
         await message.edit(embed= anm.editAnimeList(payload, pageId, lastPage))
     
-    await message.remove_reaction(payload.emoji.name, payload.member)
+    
 
 
 @client.event
